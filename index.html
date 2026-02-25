@@ -118,76 +118,73 @@
                 }
             });
 
-            function loadGeolocations() {
-                var xhr = new XMLHttpRequest();
-                xhr.open("GET", "geolocations.json", false);
-                xhr.send();
-
-                if (xhr.status === 200) {
-                    return JSON.parse(xhr.responseText);
-                } else {
-                    console.log("Failed to load geolocations");
+            async function loadGeolocations() {
+                const response = await fetch("geolocations.json");
+                if (!response.ok) {
+                    throw new Error("Failed to load geolocations");
                 }
+                return await response.json();
             }
 
-            const geolocations = loadGeolocations();
-            const chosen = geolocations[Math.round(Math.random() * geolocations.length)];
-            const chosenPosition = [chosen["latitude"], chosen["longitude"]];
+            loadGeolocations().then((geolocations) => {
+                const chosen = geolocations[Math.floor(Math.random() * geolocations.length)];
+                const chosenPosition = [chosen.latitude, chosen.longitude];
 
-            const viewer = new Viewer({
-                container: document.querySelector("#viewer"),
-                panorama: chosen["path"],
-            });
+                const viewer = new Viewer({
+                    container: document.querySelector("#viewer"),
+                    panorama: chosen["path"],
+                });
 
-            const toiletPosition = [56.784636, 53.376128];
-    	    const map = L.map("map").setView(toiletPosition, 13);
-    		L.tileLayer(
-    		    "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-    			{
-                    attribution: "(c) OpenStreetMap"
-                }
-            ).addTo(map);
+                const toiletPosition = [56.784636, 53.376128];
+           	    const map = L.map("map").setView(toiletPosition, 13);
+          		L.tileLayer(
+      		        "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+     			    {
+                        attribution: "(c) OpenStreetMap"
+                    }
+                ).addTo(map);
 
-            var guessPosition;
-            map.on("click", function(e) {
-                if (window.currentMarker) map.removeLayer(window.currentMarker);
+                var guessPosition;
+                map.on("click", function(e) {
+                    if (window.currentMarker) map.removeLayer(window.currentMarker);
 
-                window.currentMarker = L.marker(e.latlng).addTo(map)
-                    .bindPopup("Выбранное место")
-                    .openPopup();
-
-                guessPosition = e.latlng;
-            });
-
-            var positionGuessed = false;
-            const answer = document.getElementById("answer");
-            answer.addEventListener("click", () => {
-                if (!positionGuessed) {
-                    const distance = guessPosition.distanceTo(chosenPosition);
-
-                    var points = Math.log(10000 / distance) * 10;
-                    if (distance <= 50) points *= 1.5;
-                    points = points.toFixed(2);
-
-                    L.marker(chosenPosition).addTo(map)
-                        .bindPopup(`До места: ${Math.round(distance)} метров<br>Очков: ${points}`)
+                    window.currentMarker = L.marker(e.latlng).addTo(map)
+                        .bindPopup("Выбранное место")
                         .openPopup();
 
-                    const pathLine = L.polyline([guessPosition, chosenPosition]).addTo(map);
+                    guessPosition = e.latlng;
+                });
 
-                    const message = `Команда: ${teamName}\nРасстояние до места: ${Math.round(distance)} метров\nОчков: ${points}`;
+                var positionGuessed = false;
+                const answer = document.getElementById("answer");
+                answer.addEventListener("click", () => {
+                    if (!positionGuessed) {
+                        const distance = guessPosition.distanceTo(chosenPosition);
 
-                    for (let chatId of chatIds) {
-                        const telegramUrl =
-                            `https://api.telegram.org/bot${token}/sendMessage?chat_id=${chatId}&text=${encodeURIComponent(message)}`;
-                        fetch(telegramUrl);
+                        var points = Math.log(10000 / distance) * 10;
+                        if (distance <= 50) points *= 1.5;
+                        points = points.toFixed(2);
+
+                        L.marker(chosenPosition).addTo(map)
+                            .bindPopup(`До места: ${Math.round(distance)} метров<br>Очков: ${points}`)
+                            .openPopup();
+
+                        const pathLine = L.polyline([guessPosition, chosenPosition]).addTo(map);
+
+                        const message = `Команда: ${teamName}\nРасстояние до места: ${Math.round(distance)} метров\nОчков: ${points}`;
+
+                        for (let chatId of chatIds) {
+                            const telegramUrl =
+                                `https://api.telegram.org/bot${token}/sendMessage?chat_id=${chatId}&text=${encodeURIComponent(message)}`;
+                            fetch(telegramUrl);
+                        }
+
+                        answer.innerText = "Загрузить следующую панораму";
+                        positionGuessed = true;
+                    } else {
+                        window.location.reload();
                     }
-
-                    answer.innerText = "Загрузить следующую панораму";
-                    positionGuessed = true;
-                } else {
-                    window.location.reload();
-                }
+                });
             });
         </script>
     </body>
