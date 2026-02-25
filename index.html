@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@photo-sphere-viewer/core/index.min.css">
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+            integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+            crossorigin="">
+        <style>
+            #viewer {
+                width: 70vw;
+                height: 100vh;
+            }
+
+            #map {
+                position: absolute;
+                right: 0px;
+                bottom: 0px;
+                width: 30vw;
+                height: 100vh;
+                z-index: 999;
+            }
+
+            html, body { margin: 0; height: 100%; overflow: hidden }
+
+            .leaflet-control-attribution {
+                display: none;
+            }
+
+            #answer {
+                position: absolute;
+                bottom: 20px;
+                right: 20px;
+                z-index: 9999;
+                height: 30px;
+            }
+
+            #welcome {
+                position: absolute;
+                width: 100vw;
+                height: 100vh;
+                bottom: 0px;
+                left: 0px;
+                z-index: 99999;
+
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 20px;
+
+                background-color: black;
+            }
+
+            #welcome input { height: 30px; }
+            #welcome button { height: 30px; }
+            #welcome h1 { color: white; }
+        </style>
+    </head>
+    <body>
+        <div id="welcome">
+            <h1>DeriGez</h1>
+            <input id="teamName" type="text" placeholder="Введите названия команды">
+            <button id="startGame">Начать игру</button>
+        </div>
+        <div id="viewer"></div>
+        <div id="map"></div>
+        <button id="answer">Ответить</button>
+        <script type="importmap">
+            {
+                "imports": {
+                    "three": "https://cdn.jsdelivr.net/npm/three/build/three.module.js",
+                    "@photo-sphere-viewer/core": "https://cdn.jsdelivr.net/npm/@photo-sphere-viewer/core/index.module.js"
+                }
+            }
+        </script>
+        <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+            integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+            crossorigin=""></script>
+        <script type="module">
+            import { Viewer } from "@photo-sphere-viewer/core";
+
+            const token = "8431547053:AAH6PC5EIXWJ-guAGwpvAMXDawDyyIny4qs";
+            const chatIds = [5126337437, 5220115292];
+
+            function getCookie(name) {
+                const value = `; ${document.cookie}`;
+                const parts = value.split(`; ${name}=`);
+                if (parts.length === 2) return parts.pop().split(';').shift();
+            }
+
+            const welcomeDiv = document.getElementById("welcome");
+            const startButton = document.getElementById("startGame");
+
+            const teamName = getCookie("deriGezTeam");
+            if (teamName && teamName.trim() !== "") {
+                welcomeDiv.style.display = "none";
+                console.log(`Team exist. Name: ${teamName}`);
+            }
+
+            startButton.addEventListener("click", () => {
+                const nameInput = document.getElementById("teamName");
+                const name = nameInput.value;
+
+                if (name == "") {
+                    nameInput.placeholder = "Сначала введите имя!";
+                } else {
+                    welcomeDiv.style.display = "none";
+                    document.cookie = `deriGezTeam=${name}; path=/; max-age=31536000`;
+
+                    const message = `Новая команда: ${name}`;
+                    for (let chatId of chatIds) {
+                        const telegramUrl =
+                            `https://api.telegram.org/bot${token}/sendMessage?chat_id=${chatId}&text=${encodeURIComponent(message)}`;
+                        fetch(telegramUrl);
+                    }
+                }
+            });
+
+            function loadGeolocations() {
+                var xhr = new XMLHttpRequest();
+                xhr.open("GET", "/geolocations.json", false);
+                xhr.send();
+
+                if (xhr.status === 200) {
+                    return JSON.parse(xhr.responseText);
+                } else {
+                    console.log("Failed to load geolocations");
+                }
+            }
+
+            const geolocations = loadGeolocations();
+            const chosen = geolocations[Math.round(Math.random() * geolocations.length)];
+            const chosenPosition = [chosen["latitude"], chosen["longitude"]];
+
+            const viewer = new Viewer({
+                container: document.querySelector("#viewer"),
+                panorama: chosen["path"],
+            });
+
+            const toiletPosition = [56.784636, 53.376128];
+    	    const map = L.map("map").setView(toiletPosition, 13);
+    		L.tileLayer(
+    		    "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+    			{
+                    attribution: "(c) OpenStreetMap"
+                }
+            ).addTo(map);
+
+            var guessPosition;
+            map.on("click", function(e) {
+                if (window.currentMarker) map.removeLayer(window.currentMarker);
+
+                window.currentMarker = L.marker(e.latlng).addTo(map)
+                    .bindPopup("Выбранное место")
+                    .openPopup();
+
+                guessPosition = e.latlng;
+            });
+
+            var positionGuessed = false;
+            const answer = document.getElementById("answer");
+            answer.addEventListener("click", () => {
+                if (!positionGuessed) {
+                    const distance = guessPosition.distanceTo(chosenPosition);
+
+                    var points = Math.log(10000 / distance) * 10;
+                    if (distance <= 50) points *= 1.5;
+                    points = points.toFixed(2);
+
+                    L.marker(chosenPosition).addTo(map)
+                        .bindPopup(`До места: ${Math.round(distance)} метров<br>Очков: ${points}`)
+                        .openPopup();
+
+                    const pathLine = L.polyline([guessPosition, chosenPosition]).addTo(map);
+
+                    const message = `Команда: ${teamName}\nРасстояние до места: ${Math.round(distance)} метров\nОчков: ${points}`;
+
+                    for (let chatId of chatIds) {
+                        const telegramUrl =
+                            `https://api.telegram.org/bot${token}/sendMessage?chat_id=${chatId}&text=${encodeURIComponent(message)}`;
+                        fetch(telegramUrl);
+                    }
+
+                    answer.innerText = "Загрузить следующую панораму";
+                    positionGuessed = true;
+                } else {
+                    window.location.reload();
+                }
+            });
+        </script>
+    </body>
+</html>
