@@ -38,6 +38,14 @@
                 height: 30px;
             }
 
+            #resetTeam {
+                position: absolute;
+                top: 20px;
+                right: 20px;
+                z-index: 9999;
+                height: 30px;
+            }
+
             #welcome {
                 position: absolute;
                 width: 100vw;
@@ -66,12 +74,13 @@
             <input id="teamName" type="text" placeholder="Введите названия команды">
             <button id="startGame">Начать игру</button>
 	    <div id="howto">
-		<p>Перед началом скажите нам название вашей команды, которое вы ввели.<br>Ваша задача &mdash; угадать локацию панорамы.<br>Для этого нужно отметить точку на карте слева и нажать "Ответить".<br>После этого можно будет загрузить новую локацию.<br>Чем ближе точка к месту, тем больше очков вы получаете.</p>
+		<p>Перед началом скажите нам название вашей команды, которое вы ввели.<br>Ваша задача &mdash; угадать локацию панорамы.<br>Для этого нужно отметить точку на карте слева и нажать "Ответить".<br>После этого можно будет загрузить новую локацию.<br>Чем ближе точка к месту, тем больше очков вы получаете.<br>В конце урока нужно нажать на кнопку "Выйти", чтобы выйти из игры.</p>
 	    </div>
         </div>
         <div id="viewer"></div>
         <div id="map"></div>
         <button id="answer">Ответить</button>
+        <button id="resetTeam">Выйти</button>
         <script type="importmap">
             {
                 "imports": {
@@ -96,6 +105,10 @@
                 const parts = value.split(`; ${name}=`);
                 if (parts.length === 2) return parts.pop().split(';').shift();
             }
+
+	    function deleteCookie(name) {
+  		document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/;`;
+	    }
 
             const welcomeDiv = document.getElementById("welcome");
             const startButton = document.getElementById("startGame");
@@ -164,6 +177,12 @@
 
                     guessPosition = e.latlng;
                 });
+
+                const resetTeam = document.getElementById("resetTeam");
+		resetTeam.addEventListener("click", () => {
+		    deleteCookie("deriGezTeam");
+		    window.location.reload();
+		});
 
                 var positionGuessed = false;
                 const answer = document.getElementById("answer");
