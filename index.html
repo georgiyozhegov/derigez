@@ -4,6 +4,7 @@
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@photo-sphere-viewer/core/index.min.css">
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@photo-sphere-viewer/compass-plugin/index.min.css">
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
         <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
             integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
@@ -71,7 +72,8 @@
             {
                 "imports": {
                     "three": "https://cdn.jsdelivr.net/npm/three/build/three.module.js",
-                    "@photo-sphere-viewer/core": "https://cdn.jsdelivr.net/npm/@photo-sphere-viewer/core/index.module.js"
+                    "@photo-sphere-viewer/core": "https://cdn.jsdelivr.net/npm/@photo-sphere-viewer/core/index.module.js",
+                    "@photo-sphere-viewer/compass-plugin": "https://cdn.jsdelivr.net/npm/@photo-sphere-viewer/compass-plugin/index.module.js"
                 }
             }
         </script>
@@ -80,6 +82,7 @@
             crossorigin=""></script>
         <script type="module">
             import { Viewer } from "@photo-sphere-viewer/core";
+	    import { CompassPlugin } from "@photo-sphere-viewer/compass-plugin";
 
             const token = "8431547053:AAH6PC5EIXWJ-guAGwpvAMXDawDyyIny4qs";
             const chatIds = [5126337437, 5220115292];
@@ -133,6 +136,9 @@
                 const viewer = new Viewer({
                     container: document.querySelector("#viewer"),
                     panorama: chosen["path"],
+		    plugins: [
+			CompassPlugin.withConfig({}),
+    		    ],
                 });
 
                 const toiletPosition = [56.784636, 53.376128];
