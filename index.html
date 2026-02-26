@@ -56,7 +56,8 @@
 
             #welcome input { height: 30px; }
             #welcome button { height: 30px; }
-            #welcome h1 { color: white; }
+            #welcome h1 { color: white; font-family: monospace; }
+	    #welcome p { font-family: monospace; color: white; }
         </style>
     </head>
     <body>
@@ -64,6 +65,9 @@
             <h1>DeriGez</h1>
             <input id="teamName" type="text" placeholder="Введите названия команды">
             <button id="startGame">Начать игру</button>
+	    <div id="howto">
+		<p>Перед началом скажите нам название вашей команды, которое вы ввели.<br>Ваша задача &mdash; угадать локацию панорамы.<br>Для этого нужно отметить точку на карте слева и нажать "Ответить".<br>После этого можно будет загрузить новую локацию.<br>Чем ближе точка к месту, тем больше очков вы получаете.</p>
+	    </div>
         </div>
         <div id="viewer"></div>
         <div id="map"></div>
