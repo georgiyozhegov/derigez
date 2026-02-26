@@ -167,7 +167,7 @@
                     if (!positionGuessed) {
                         const distance = guessPosition.distanceTo(chosenPosition);
 
-			const points = (100 * Math.pow(2.7182818, -10 * distance / 10000)).toFixed(2);
+			const points = Math.abs(100 * Math.pow(2.7182818, -10 * distance / 10000)).toFixed(2);
 
                         L.marker(chosenPosition).addTo(map)
                             .bindPopup(`До места: ${Math.round(distance)} метров<br>Очков: ${points}`)
