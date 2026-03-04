@@ -1,218 +1,209 @@
 <!DOCTYPE html>
 <html>
-    <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@photo-sphere-viewer/core/index.min.css">
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@photo-sphere-viewer/compass-plugin/index.min.css">
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
-        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-            integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
-            crossorigin="">
-        <style>
-            #viewer {
-                width: 70vw;
-                height: 100vh;
-            }
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-            #map {
-                position: absolute;
-                right: 0px;
-                bottom: 0px;
-                width: 30vw;
-                height: 100vh;
-                z-index: 999;
-            }
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@photo-sphere-viewer/core/index.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@photo-sphere-viewer/compass-plugin/index.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 
-            html, body { margin: 0; height: 100%; overflow: hidden }
+    <style>
+        #viewer { width: 70vw; height: 100vh; }
+        #map { position: absolute; right: 0; bottom: 0; width: 30vw; height: 100vh; z-index: 999; }
+        html, body { margin: 0; height: 100%; overflow: hidden; }
+        .leaflet-control-attribution { display: none; }
 
-            .leaflet-control-attribution {
-                display: none;
-            }
+        #answer, #resetTeam, #totalPoints {
+            position: absolute;
+            right: 20px;
+            z-index: 9999;
+            height: 30px;
+        }
 
-            #answer {
-                position: absolute;
-                bottom: 20px;
-                right: 20px;
-                z-index: 9999;
-                height: 30px;
-            }
+        #answer { bottom: 20px; }
+        #resetTeam { top: 20px; }
+        #totalPoints { top: 55px; font-family: monospace; font-size: 1.5rem; }
 
-            #resetTeam {
-                position: absolute;
-                top: 20px;
-                right: 20px;
-                z-index: 9999;
-                height: 30px;
-            }
+        #welcome {
+            position: absolute;
+            width: 100vw;
+            height: 100vh;
+            z-index: 99999;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            background-color: black;
+        }
 
-            #welcome {
-                position: absolute;
-                width: 100vw;
-                height: 100vh;
-                bottom: 0px;
-                left: 0px;
-                z-index: 99999;
+        #welcome input, #welcome button { height: 30px; }
+        #welcome h1, #welcome p { color: white; font-family: monospace; }
+    </style>
+</head>
 
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                gap: 20px;
+<body>
+<div id="welcome">
+    <h1>DeriGez</h1>
+    <input id="teamName" type="text" placeholder="Введите название команды">
+    <button id="startGame">Начать игру</button>
+    <div>
+        <p>
+            Введите название команды.<br>
+            Отметьте точку на карте и нажмите "Ответить".<br>
+            Чем ближе — тем больше очков.<br>
+            Круг в углу — это не компас.
+        </p>
+    </div>
+</div>
 
-                background-color: black;
-            }
+<div id="viewer"></div>
+<div id="map"></div>
+<button id="answer">Ответить</button>
+<button id="resetTeam">Выйти</button>
+<b><output id="totalPoints">0 очков</output></b>
 
-            #welcome input { height: 30px; }
-            #welcome button { height: 30px; }
-            #welcome h1 { color: white; font-family: monospace; }
-	    #welcome p { font-family: monospace; color: white; }
-        </style>
-    </head>
-    <body>
-        <div id="welcome">
-            <h1>DeriGez</h1>
-            <input id="teamName" type="text" placeholder="Введите названия команды">
-            <button id="startGame">Начать игру</button>
-	    <div id="howto">
-		<p>Перед началом скажите нам название вашей команды, которое вы ввели.<br>Ваша задача &mdash; угадать локацию панорамы.<br>Для этого нужно отметить точку на карте слева и нажать "Ответить".<br>После этого можно будет загрузить новую локацию.<br>Чем ближе точка к месту, тем больше очков вы получаете.<br>В конце урока нужно нажать на кнопку "Выйти", чтобы выйти из игры.</p>
-	    </div>
-        </div>
-        <div id="viewer"></div>
-        <div id="map"></div>
-        <button id="answer">Ответить</button>
-        <button id="resetTeam">Выйти</button>
-        <script type="importmap">
-            {
-                "imports": {
-                    "three": "https://cdn.jsdelivr.net/npm/three/build/three.module.js",
-                    "@photo-sphere-viewer/core": "https://cdn.jsdelivr.net/npm/@photo-sphere-viewer/core/index.module.js",
-                    "@photo-sphere-viewer/compass-plugin": "https://cdn.jsdelivr.net/npm/@photo-sphere-viewer/compass-plugin/index.module.js"
-                }
-            }
-        </script>
-        <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-            integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
-            crossorigin=""></script>
-        <script type="module">
-            import { Viewer } from "@photo-sphere-viewer/core";
-	    import { CompassPlugin } from "@photo-sphere-viewer/compass-plugin";
+<script type="importmap">
+{
+    "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three/build/three.module.js",
+        "@photo-sphere-viewer/core": "https://cdn.jsdelivr.net/npm/@photo-sphere-viewer/core/index.module.js",
+        "@photo-sphere-viewer/compass-plugin": "https://cdn.jsdelivr.net/npm/@photo-sphere-viewer/compass-plugin/index.module.js"
+    }
+}
+</script>
 
-            const token = "8431547053:AAH6PC5EIXWJ-guAGwpvAMXDawDyyIny4qs";
-            const chatIds = [5126337437, 5220115292];
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-            function getCookie(name) {
-                const value = `; ${document.cookie}`;
-                const parts = value.split(`; ${name}=`);
-                if (parts.length === 2) return parts.pop().split(';').shift();
-            }
+<script type="module">
+import { Viewer } from "@photo-sphere-viewer/core";
+import { CompassPlugin } from "@photo-sphere-viewer/compass-plugin";
 
-	    function deleteCookie(name) {
-  		document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/;`;
-	    }
+const token = "8431547053:AAH6PC5EIXWJ-guAGwpvAMXDawDyyIny4qs";
+const chatIds = [5126337437, 5220115292];
 
-            const welcomeDiv = document.getElementById("welcome");
-            const startButton = document.getElementById("startGame");
+function getCookie(name) {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop().split(';').shift();
+}
 
-            const teamName = getCookie("deriGezTeam");
-            if (teamName && teamName.trim() !== "") {
-                welcomeDiv.style.display = "none";
-                console.log(`Team exist. Name: ${teamName}`);
-            }
+function deleteCookie(name) {
+    document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/;`;
+}
 
-            startButton.addEventListener("click", () => {
-                const nameInput = document.getElementById("teamName");
-                const name = nameInput.value;
+function getSafeTeamKey(teamName) {
+    const encoded = btoa(unescape(encodeURIComponent(teamName)))
+        .replace(/[^a-zA-Z0-9]/g, '')
+        .substring(0, 20);
+    return `deriGezPoints_${encoded}`;
+}
 
-                if (name == "") {
-                    nameInput.placeholder = "Сначала введите имя!";
-                } else {
-                    welcomeDiv.style.display = "none";
-                    document.cookie = `deriGezTeam=${name}; path=/; max-age=31536000`;
+const welcomeDiv = document.getElementById("welcome");
+const startButton = document.getElementById("startGame");
+const output = document.getElementById("totalPoints");
 
-                    const message = `Новая команда: ${name}`;
-                    for (let chatId of chatIds) {
-                        const telegramUrl =
-                            `https://api.telegram.org/bot${token}/sendMessage?chat_id=${chatId}&text=${encodeURIComponent(message)}`;
-                        fetch(telegramUrl);
-                    }
-                }
-            });
+let teamName = getCookie("deriGezTeam");
 
-            async function loadGeolocations() {
-                const response = await fetch("geolocations.json");
-                if (!response.ok) {
-                    throw new Error("Failed to load geolocations");
-                }
-                return await response.json();
-            }
+if (teamName && teamName.trim() !== "") {
+    welcomeDiv.style.display = "none";
+}
 
-            loadGeolocations().then((geolocations) => {
-                const chosen = geolocations[Math.floor(Math.random() * geolocations.length)];
-                const chosenPosition = [chosen.latitude, chosen.longitude];
+function updatePointsDisplay(distance, points) {
+    if (!teamName) return;
+    const key = getSafeTeamKey(teamName);
+    const total = parseFloat(getCookie(key) || "0");
+    output.innerText = `${total.toFixed(2)} очков`;
 
-                const viewer = new Viewer({
-                    container: document.querySelector("#viewer"),
-                    panorama: chosen["path"],
-		    plugins: [
-			CompassPlugin.withConfig({}),
-    		    ],
-                });
+    const message =
+        `Команда: ${teamName}\nРасстояние до места: ${Math.round(distance)} метров\nОчков: ${points}\nВсего очков: ${total}`;
+    for (let chatId of chatIds) {
+        const telegramUrl = `https://api.telegram.org/bot${token}/sendMessage?chat_id=${chatId}&text=${encodeURIComponent(message)}`;
+        fetch(telegramUrl);
+    }
+}
 
-                const toiletPosition = [56.784636, 53.376128];
-           	    const map = L.map("map").setView(toiletPosition, 13);
-          		L.tileLayer(
-      		        "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-     			    {
-                        attribution: "(c) OpenStreetMap"
-                    }
-                ).addTo(map);
+const key = getSafeTeamKey(teamName);
+const total = parseFloat(getCookie(key) || "0");
+output.innerText = `${total.toFixed(2)} очков`;
 
-                var guessPosition;
-                map.on("click", function(e) {
-                    if (window.currentMarker) map.removeLayer(window.currentMarker);
+startButton.addEventListener("click", () => {
+    const name = document.getElementById("teamName").value.trim();
+    if (!name) return;
 
-                    window.currentMarker = L.marker(e.latlng).addTo(map)
-                        .bindPopup("Выбранное место")
-                        .openPopup();
+    teamName = name;
+    document.cookie = `deriGezTeam=${name}; path=/; max-age=31536000`;
+    welcomeDiv.style.display = "none";
+    updatePointsDisplay("XXX (Новая команда)", "XXX (Регистрация)");
+});
 
-                    guessPosition = e.latlng;
-                });
+async function loadGeolocations() {
+    const response = await fetch("geolocations.json");
+    if (!response.ok) throw new Error("Failed to load geolocations");
+    return await response.json();
+}
 
-                const resetTeam = document.getElementById("resetTeam");
-		resetTeam.addEventListener("click", () => {
-		    deleteCookie("deriGezTeam");
-		    window.location.reload();
-		});
+loadGeolocations().then((geolocations) => {
+    const chosen = geolocations[Math.floor(Math.random() * geolocations.length)];
+    const chosenPosition = L.latLng(chosen.latitude, chosen.longitude);
 
-                var positionGuessed = false;
-                const answer = document.getElementById("answer");
-                answer.addEventListener("click", () => {
-                    if (!positionGuessed) {
-                        const distance = guessPosition.distanceTo(chosenPosition);
+    new Viewer({
+        container: document.querySelector("#viewer"),
+        panorama: chosen.path,
+        plugins: [CompassPlugin.withConfig({})],
+    });
 
-			const points = Math.abs(100 * Math.pow(2.7182818, -10 * distance / 10000)).toFixed(2);
+    const map = L.map("map").setView([56.784636, 53.376128], 13);
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
 
-                        L.marker(chosenPosition).addTo(map)
-                            .bindPopup(`До места: ${Math.round(distance)} метров<br>Очков: ${points}`)
-                            .openPopup();
+    let guessPosition = null;
+    let positionGuessed = false;
 
-                        const pathLine = L.polyline([guessPosition, chosenPosition]).addTo(map);
+    map.on("click", (e) => {
+        if (window.currentMarker) map.removeLayer(window.currentMarker);
+        window.currentMarker = L.marker(e.latlng).addTo(map);
+        guessPosition = e.latlng;
+    });
 
-                        const message = `Команда: ${teamName}\nРасстояние до места: ${Math.round(distance)} метров\nОчков: ${points}`;
+    document.getElementById("resetTeam").addEventListener("click", () => {
+        if (teamName) deleteCookie(getSafeTeamKey(teamName));
+        deleteCookie("deriGezTeam");
+        window.location.reload();
+    });
 
-                        for (let chatId of chatIds) {
-                            const telegramUrl =
-                                `https://api.telegram.org/bot${token}/sendMessage?chat_id=${chatId}&text=${encodeURIComponent(message)}`;
-                            fetch(telegramUrl);
-                        }
+    document.getElementById("answer").addEventListener("click", () => {
+        if (!guessPosition) return;
 
-                        answer.innerText = "Загрузить следующую панораму";
-                        positionGuessed = true;
-                    } else {
-                        window.location.reload();
-                    }
-                });
-            });
-        </script>
-    </body>
+        if (!positionGuessed) {
+            const distance = guessPosition.distanceTo(chosenPosition);
+
+            const points = Math.abs(100 * Math.exp(-10 * distance / 10000));
+            const roundedPoints = parseFloat(points.toFixed(2));
+
+            const key = getSafeTeamKey(teamName);
+            let totalPoints = parseFloat(getCookie(key) || "0");
+
+            totalPoints += roundedPoints;
+            totalPoints = parseFloat(totalPoints.toFixed(2));
+
+            document.cookie = `${key}=${totalPoints}; path=/; max-age=31536000`;
+            updatePointsDisplay(distance, roundedPoints);
+
+            L.marker(chosenPosition)
+                .addTo(map)
+                .bindPopup(`Расстояние: ${Math.round(distance)} м<br>Очков: ${roundedPoints}`)
+                .openPopup();
+
+            L.polyline([guessPosition, chosenPosition]).addTo(map);
+
+            document.getElementById("answer").innerText = "Следующая панорама";
+            positionGuessed = true;
+        } else {
+            window.location.reload();
+        }
+    });
+});
+</script>
+</body>
 </html>
